@@ -77,13 +77,13 @@ The relocation program will be funded separately from the social insurance progr
 
 ### 3.3 Model Results
 
-First, we used Monte Carlos simulation on the created Compound Poisson Model to simulate the base case of the future costs arising from natural disasters. This was run under the 4 provided SSP scenarios, with SSP5 being the more extreme scenario in terms of Atmospheric CO¬¬¬¬¬¬¬2.
+First, we used Monte Carlos simulation on the created Compound Poisson Model to simulate the base case of the future costs arising from natural disasters. This was run under the 4 provided SSP scenarios, with SSP5 being the more extreme scenario in terms of Atmospheric CO2.
 
 Total Expected Cost Arising from Natural Disasters Under SSP5 Assumption
 
 ![Figure 2](https://user-images.githubusercontent.com/113341306/229004676-0dff5480-d863-48cf-9152-4a45978b0b31.png)
 
-![Table 3](https://user-images.githubusercontent.com/113341306/229004697-a00f4cf4-f3e3-4281-972f-bab39d6f596e.png)
+![Table 3](https://user-images.githubusercontent.com/113341306/229005477-87b3842b-ce31-4c2d-b5b7-cd77b084282b.png)
 
 Total Expected Cost Arising by 2030 from Natural Disasters Under different SSP Assumptions
 
