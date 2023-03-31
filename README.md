@@ -169,7 +169,7 @@ Most importantly, our simulation established that our constructed program has a 
 The social insurance program and voluntary relocation scheme are expected to be financially beneficial to the Storslysia government based on our analysis introduced above. Our pricing system offers a range of scenarios based on a variety of assumptions that cover the potential outcomes of our scheme after implementation that proved the feasibility of this program. 
 Yet, further monitoring and tailoring are indispensable. And a review of the enclosed limitations of our program and recommendations followed up with additional information from the government of Storslysia would be instrumental to the improved effectiveness of this program. 
 
-#Reference
+# Reference
 [1] Raschky, P. A., & Weck-Hannemann, H. (2007). Charity hazard—A real hazard to natural
 disaster insurance?. Environmental Hazards, 7(4), 321-329.
 [2] King, D., Bird, D., Haynes, K., Boon, H., Cottrell, A., Millar, J., ... & Thomas, M. (2014).
