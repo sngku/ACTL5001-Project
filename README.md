@@ -1,5 +1,4 @@
-# Storslysia Social insurance program and relocation scheme
-
+# Storslysia Social insurance program and relocation scheme!
 
 ---
 
@@ -17,11 +16,7 @@ Given the limitations and uncertainties of the data, we have made some reasonabl
 Storslysia has suffered through various major disasters in the past decades, and, with the fast-approaching effects of climate change, the rate and severity of these disasters appear to be ramping up. The number of cases of natural disasters reported in the past decade makes up almost a third of the total reports in the last 60 years. With the looming threat of climate change, it has become imperative to put in place proper social insurance programs that target mitigating and reducing the cost of oncoming natural disasters. 
 
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Figure%201.1.png">
-</p>
-
-<p align="center"> 
-<img src="https://user-images.githubusercontent.com/124782714/228501019-009f2f70-90a4-4100-9515-c11abdcec632.png">
+<img src="https://user-images.githubusercontent.com/113341306/229003962-a21479a6-af6d-4cc2-b781-a6653cfafe5f.png">
 </p>
 
 Yet, amongst the natural hazards that occur in Storslysia, most of the events had a negligible amount of property damage, injuries, and fatalities. Henceforward, the low-risk hazards would be retained. Whilst our insurance program would be primarily designed to transfer the moderate to high-risk hazards along with relocation schemes to reduce the overall risk exposure of Storslysia to natural hazards as below.
@@ -57,7 +52,7 @@ We plan to have the program slowly adopted over the next 10 years, aiming to mov
 ### 3.1 Methodologies
 
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Table%201.png">
+<img src="![Table 1](https://user-images.githubusercontent.com/113341306/229004030-469fe6e3-7f97-4fb9-a684-3d267dfb289b.png)">
 </p>
 
 ### 3.2 Assumptions
