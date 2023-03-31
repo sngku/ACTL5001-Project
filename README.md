@@ -81,7 +81,7 @@ First, we used Monte Carlos simulation on the created Compound Poisson Model to 
 
 Total Expected Cost Arising from Natural Disasters Under SSP5 Assumption
 
-![Figure 2](https://user-images.githubusercontent.com/113341306/229004676-0dff5480-d863-48cf-9152-4a45978b0b31.png)
+![Figure 2](https://user-images.githubusercontent.com/113341306/229006046-28b33155-6f3a-47a0-9919-524e579b1422.png)
 
 ![Table 3](https://user-images.githubusercontent.com/113341306/229005477-87b3842b-ce31-4c2d-b5b7-cd77b084282b.png)
 
@@ -97,8 +97,8 @@ Next, we simulate the effect under the inclusion of the relocation program under
 
 Comparison of Expected Cost Per Year on Disaster Claims Under SSP5
 
-![Figure 3 1](https://user-images.githubusercontent.com/113341306/229004742-ee12bf53-e7c4-452c-a5b6-9fa0c9acbce8.png)
-![Figure 3 2](https://user-images.githubusercontent.com/113341306/229004761-0fe52b48-95da-4c3f-8670-ef19acc65581.png)
+![Figure 3 1](https://user-images.githubusercontent.com/113341306/229006065-6d52a395-5916-4402-a804-5b571f1c7953.png)
+![Figure 3 2](https://user-images.githubusercontent.com/113341306/229006080-11048a2a-86c9-452e-beac-0b36ae05159d.png)
 <h6 align="left"> 
 [red: without relocation; black: with relocation]
 </h6>
