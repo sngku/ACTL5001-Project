@@ -20,6 +20,10 @@ Storslysia has suffered through various major disasters in the past decades, and
 <img src="https://github.com/sngku/ACTL5001-Project/blob/main/Figure%201.1.png">
 </p>
 
+<p align="center"> 
+<img src="https://user-images.githubusercontent.com/124782714/228501019-009f2f70-90a4-4100-9515-c11abdcec632.png">
+</p>
+
 Yet, amongst the natural hazards that occur in Storslysia, most of the events had a negligible amount of property damage, injuries, and fatalities. Henceforward, the low-risk hazards would be retained. Whilst our insurance program would be primarily designed to transfer the moderate to high-risk hazards along with relocation schemes to reduce the overall risk exposure of Storslysia to natural hazards as below.
 
 ### 1.2 Reserving for future disasters
