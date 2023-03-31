@@ -168,3 +168,29 @@ Most importantly, our simulation established that our constructed program has a 
 ## Conclusion 
 The social insurance program and voluntary relocation scheme are expected to be financially beneficial to the Storslysia government based on our analysis introduced above. Our pricing system offers a range of scenarios based on a variety of assumptions that cover the potential outcomes of our scheme after implementation that proved the feasibility of this program. 
 Yet, further monitoring and tailoring are indispensable. And a review of the enclosed limitations of our program and recommendations followed up with additional information from the government of Storslysia would be instrumental to the improved effectiveness of this program. 
+
+#Reference
+[1] Raschky, P. A., & Weck-Hannemann, H. (2007). Charity hazard—A real hazard to natural
+disaster insurance?. Environmental Hazards, 7(4), 321-329.
+[2] King, D., Bird, D., Haynes, K., Boon, H., Cottrell, A., Millar, J., ... & Thomas, M. (2014).
+Voluntary relocation as an adaptation strategy to extreme weather events. International journal
+of disaster risk reduction, 8, 83-90.
+[3] Nguyen, C. N. (2020). Homeowners’ choice when the government proposes a managed
+retreat. International journal of disaster risk reduction, 47, 101543.
+[4] Iuchi, K., & Mutter, J. (2020). Governing community relocation after major disasters: An
+analysis of three different approaches and its outcomes in Asia. Progress in Disaster Science,
+6, 100071.
+[5] Neumann B, Vafeidis AT, Zimmermann J, Nicholls RJ. Future coastal population growth
+and exposure to sea-level rise and coastal flooding--a global assessment. PLoS One. 2015 Mar
+[6] Boston, J., Panda, A., & Surminski, S. (2021). Designing a funding framework for the
+impacts of slow-onset climate change—insights from recent experiences with planned
+relocation. Current Opinion in Environmental Sustainability, 50, 159-168.
+[7] Bier, V. M., Zhou, Y., & Du, H. (2020). Game-theoretic modeling of pre-disaster
+relocation. The Engineering Economist, 65(2), 89-113.
+[8] Pralle, S. (2019). Drawing lines: FEMA and the politics of mapping flood zones. Climatic
+Change, 152(2), 227-237.
+[9] Mach K, Kraan C, Hino M, Siders AR, Johnston E, Field C: Managed retreat through
+voluntary buyouts of flood-prone properties. Sci Adv 2019, 5
+[10] Brisbane Sustainability Agency (2022). Flood Resilient Homes Program FloodResilience Strategies
+[11] Chief Executive Officer of Queensland Reconstruction Authority (2019). Storm Tide
+Resilient Building Guidance for Queensland Homes
