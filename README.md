@@ -82,7 +82,7 @@ First, we used Monte Carlos simulation on the created Compound Poisson Model to 
 Total Expected Cost Arising from Natural Disasters Under SSP5 Assumption
 
 ![Figure 2](https://user-images.githubusercontent.com/113341306/229004676-0dff5480-d863-48cf-9152-4a45978b0b31.png)
-<p align="center"> 
+
 ![Table 3](https://user-images.githubusercontent.com/113341306/229004697-a00f4cf4-f3e3-4281-972f-bab39d6f596e.png)
 
 Total Expected Cost Arising by 2030 from Natural Disasters Under different SSP Assumptions
