@@ -1,0 +1,813 @@
+---
+title: "SOA Research Cost Simulation"
+output: pdf_document
+date: "2023-03-16"
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(evd)
+library(actuar)
+library(goftest)
+library(univariateML)
+library(dplyr)
+library(aTSA)
+library(forecast)
+```
+
+```{r DATA, include=FALSE}
+Inflation_adjusted_damages=read_csv("yearafter1960.csv")
+Inflation_adjusted_damages=Inflation_adjusted_damages[order(Inflation_adjusted_damages$Quarter),]
+Inflation_adjusted_damages=Inflation_adjusted_damages[order(Inflation_adjusted_damages$Year),]
+
+Inflation_adjusted_damages$Presentvalue
+minor_cost=Inflation_adjusted_damages[Inflation_adjusted_damages$Presentvalue<15000,]
+medium_cost=Inflation_adjusted_damages[Inflation_adjusted_damages$Presentvalue>15000 
+                                       & Inflation_adjusted_damages$Presentvalue<6000000,]
+major_cost=Inflation_adjusted_damages[Inflation_adjusted_damages$Presentvalue>6000000,]
+```
+
+```{r Quarterly ARIMA}
+#count hazards each level
+
+library(dplyr)
+
+minor_count_PV<-
+  minor_cost %>%
+  group_by(Year,Quarter) %>%
+  summarise(Count = n())
+
+medium_count_PV<-
+  medium_cost %>%
+  group_by(Year,Quarter) %>%
+  summarise(Count = n())
+
+major_count_PV<-
+  major_cost %>%
+  group_by(Year,Quarter) %>%
+  summarise(Count = n())
+
+# complete the dataset
+
+Year <- rep(c(1960:2019), each = 4)
+Quarter <- rep(c(1:4), times = 60)
+complete_hazard_PV <- data.frame(Year, Quarter)
+minor_PV <- merge(complete_hazard_PV, minor_count_PV,by=c("Year","Quarter") , all = TRUE)
+medium_PV <- merge(complete_hazard_PV, medium_count_PV,by=c("Year","Quarter") , all = TRUE)
+major_PV <- merge(complete_hazard_PV, major_count_PV,by=c("Year","Quarter") , all = TRUE)
+
+minor_PV[is.na(minor_PV)] <- 0
+medium_PV[is.na(medium_PV)] <- 0
+major_PV[is.na(major_PV)] <- 0
+
+# build time series
+
+ts_minor_PV <- ts(minor_PV[,3],frequency = 4,start = c(1960,1))
+plot(ts_minor_PV,main = "Minor Hazard Quarterly from 1960-2019",ylim=c(0,140))
+abline(reg = lm(ts_minor_PV~time(ts_minor_PV)), col="red")
+
+ts_medium_PV <- ts(medium_PV[,3],frequency = 4,start = c(1960,1))
+plot(ts_medium_PV,main = "Medium Hazard Quarterly from 1960-2019",ylim=c(0,140))
+abline(reg = lm(ts_medium_PV~time(ts_medium_PV)), col="red")
+
+ts_major_PV <- ts(major_PV[,3],frequency = 4,start = c(1960,1))
+plot(ts_major_PV,main = "Major Hazard Quarterly from 1960-2019",ylim=c(0,140))
+abline(reg = lm(ts_major_PV~time(ts_major_PV)), col="red")
+
+adf.test(minor_PV$Count) # p-value = 0.02452 , stationary
+adf.test(medium_PV$Count) # p-value = 0.04676 , stationary
+adf.test(major_PV$Count) # p-value = 0.01 , stationary
+
+#apply autoarima
+
+auto.arima(minor_PV$Count)  #ARIMA(1,0,4)
+auto.arima(medium_PV$Count)  #ARIMA(2,1,3)
+auto.arima(major_PV$Count)   #ARIMA(0,1,1)
+
+# PACF and ACF
+
+
+##Minor
+pacf(minor_PV$Count,lag=40,lwd = 5)  #cut-off at 1, 4
+acf(minor_PV$Count,lag=40,lwd = 5)  #cut-off at 1
+##Medium
+pacf(medium_PV$Count,lag=40,lwd = 5)  #cut-off at 1,4
+acf(medium_PV$Count,lag=40,lwd = 5)  #cut-off at 1
+##Major
+pacf(major_PV$Count,lag=40,lwd = 5)  #cut-off at 4
+acf(major_PV$Count,lag=40,lwd = 5)  #cut-off at 4
+
+# Try different p,q
+
+## Minor
+ARIMA_minor_PV_111 <- arima(ts_minor_PV, order = c(1,1,1))
+print(ARIMA_minor_PV_111) #sigma^2 estimated as 28.55:  log likelihood = -740.39,  aic = 1486.78
+ARIMA_minor_PV_411 <- arima(ts_minor_PV, order = c(4,1,1))
+print(ARIMA_minor_PV_411) #sigma^2 estimated as 26.55:  log likelihood = -731.8,  aic = 1475.59  
+ARIMA_minor_PV_114 <- arima(ts_minor_PV, order = c(1,1,4))
+print(ARIMA_minor_PV_114) #sigma^2 estimated as 27.18:  log likelihood = -734.48,  aic = 1480.96
+ARIMA_minor_PV_414 <- arima(ts_minor_PV, order = c(4,1,4))
+print(ARIMA_minor_PV_414) #sigma^2 estimated as 24.05:  log likelihood = -720.68,  aic = 1459.36  ***
+ARIMA_minor_PV_101 <- arima(ts_minor_PV, order = c(1,0,1))
+print(ARIMA_minor_PV_101) #sigma^2 estimated as 28.17:  log likelihood = -741.24,  aic = 1490.48
+ARIMA_minor_PV_401 <- arima(ts_minor_PV, order = c(4,0,1))
+print(ARIMA_minor_PV_401) #sigma^2 estimated as 26.19:  log likelihood = -732.63,  aic = 1479.26  
+ARIMA_minor_PV_104 <- arima(ts_minor_PV, order = c(1,0,4))
+print(ARIMA_minor_PV_104) #sigma^2 estimated as 26.36:  log likelihood = -733.37,  aic = 1480.75
+ARIMA_minor_PV_404 <- arima(ts_minor_PV, order = c(4,0,4))
+print(ARIMA_minor_PV_404) #sigma^2 estimated as 24.04:  log likelihood = -723.12,  aic = 1466.25  
+
+#Medium
+ARIMA_medium_PV_211 <- arima(ts_medium_PV, order = c(2,1,1))
+print(ARIMA_medium_PV_211) #igma^2 estimated as 114.5:  log likelihood = -906.32,  aic = 1820.64
+ARIMA_medium_PV_213 <- arima(ts_medium_PV, order = c(2,1,3))
+print(ARIMA_medium_PV_213) #sigma^2 estimated as 102.8:  log likelihood = -893.65,  aic = 1799.29 ***
+ARIMA_medium_PV_111 <- arima(ts_medium_PV, order = c(1,1,1))
+print(ARIMA_medium_PV_111) #sigma^2 estimated as 137.5:  log likelihood = -928.04,  aic = 1862.07  
+ARIMA_medium_PV_113 <- arima(ts_medium_PV, order = c(1,1,3))
+print(ARIMA_medium_PV_113) #sigma^2 estimated as 123.1:  log likelihood = -914.82,  aic = 1839.64  
+ARIMA_medium_PV_411 <- arima(ts_medium_PV, order = c(4,1,1))
+print(ARIMA_medium_PV_411) #sigma^2 estimated as 105.9:  log likelihood = -897.11,  aic = 1806.23  
+ARIMA_medium_PV_413 <- arima(ts_medium_PV, order = c(4,1,3))
+print(ARIMA_medium_PV_413) #sigma^2 estimated as 102.7:  log likelihood = -893.6,  aic = 1803.21  
+
+#Major
+ARIMA_major_PV_001 <- arima(ts_major_PV, order = c(0,0,1))
+print(ARIMA_major_PV_001) #sigma^2 estimated as 2.759:  log likelihood = -462.32,  aic = 930.64 
+ARIMA_major_PV_004 <- arima(ts_major_PV, order = c(0,0,4))
+print(ARIMA_major_PV_004) #sigma^2 estimated as 3.092:  log likelihood = -476.16,  aic = 964.33 
+ARIMA_major_PV_401 <- arima(ts_major_PV, order = c(4,0,1))
+print(ARIMA_major_PV_401) #sigma^2 estimated as 3.112:  log likelihood = -476.91,  aic = 967.82 
+ARIMA_major_PV_404 <- arima(ts_major_PV, order = c(4,0,4))
+print(ARIMA_major_PV_404) #sigma^2 estimated as 3.068:  log likelihood = -475.28,  aic = 970.57 ***
+
+ARIMA_major_PV_011 <- arima(ts_major_PV, order = c(0,1,1))
+print(ARIMA_major_PV_011) #sigma^2 estimated as 3.367:  log likelihood = -485.83,  aic = 975.66
+ARIMA_major_PV_014 <- arima(ts_major_PV, order = c(0,1,4))
+print(ARIMA_major_PV_014) #sigma^2 estimated as 3.364:  log likelihood = -485.75,  aic = 981.5
+ARIMA_major_PV_411 <- arima(ts_major_PV, order = c(4,1,1))
+print(ARIMA_major_PV_411) #sigma^2 estimated as 3.142:  log likelihood = -477.68,  aic = 967.37
+ARIMA_major_PV_414 <- arima(ts_major_PV, order = c(4,1,4))
+print(ARIMA_major_PV_414) #sigma^2 estimated as 3.116:  log likelihood = -476.71,  aic = 971.42
+
+# Plotting the original data and the fitted one
+##Minor
+ts.plot(ts_minor_PV, main = "Minor Harzard Quarterly and Predicted")
+ARIMA_minor_PV_fit = ts_minor_PV - residuals(ARIMA_minor_PV_414)
+points(ARIMA_minor_PV_fit, type = "l",col = "blue", lty =5)
+##Medium
+ts.plot(ts_medium_PV, main = "Medium Harzard Quarterly and Predicted")
+ARIMA_medium_PV_fit = ts_medium_PV - residuals(ARIMA_medium_PV_213)
+points(ARIMA_medium_PV_fit, type = "l",col = "blue", lty =5)
+##Major
+ts.plot(ts_major_PV, main = "Major Harzard Quarterly and Predicted")
+ARIMA_major_PV_fit = ts_major_PV - residuals(ARIMA_major_PV_404)
+points(ARIMA_major_PV_fit, type = "l",col = "blue", lty =5)
+
+# 1-step forecast
+predict_minor_PV <- predict (ARIMA_minor_PV_414, n.ahead = 4)
+predict_minor_PV$pred  #2020  3.142455 10.670606 10.157028  2.328518
+
+predict_medium_PV <- predict (ARIMA_medium_PV_213, n.ahead = 4)
+predict_medium_PV$pred #2020 3.364245 6.734794 6.707849 3.698577
+
+predict_major_PV <- predict (ARIMA_major_PV_404, n.ahead = 4)
+predict_major_PV$pred   #2020 0.4358967 0.3188952 0.3750142 0.5179768
+```
+
+```{r Claim Amount lambda Yearly ARIMA}
+minor_count_y_PV<-
+  minor_cost %>%
+  group_by(Year) %>%
+  summarise(Count_yearly = n())
+
+medium_count_y_PV<-
+  medium_cost %>%
+  group_by(Year) %>%
+  summarise(Count_yearly = n())
+
+major_count_y_PV<-
+  major_cost %>%
+  group_by(Year) %>%
+  summarise(Count_yearly = n())
+
+# complete the dataset
+
+Year <- rep(c(1960:2019))
+complete_hazard_y_PV <- data.frame(Year)
+minor_y_PV <- merge(complete_hazard_y_PV, minor_count_y_PV,by=c("Year") , all = TRUE)
+medium_y_PV <- merge(complete_hazard_y_PV, medium_count_y_PV,by=c("Year") , all = TRUE)
+major_y_PV <- merge(complete_hazard_y_PV, major_count_y_PV,by=c("Year") , all = TRUE)
+
+minor_y_PV[is.na(minor_y_PV)] <- 0
+medium_y_PV[is.na(medium_y_PV)] <- 0
+major_y_PV[is.na(major_y_PV)] <- 0
+
+# build time series
+
+ts_minor_y_PV <- ts(minor_y_PV[,2], frequency = 1,start = c(1960,1))
+plot(ts_minor_y_PV,main = "Minor Hazard Yearly from 1960-2019", ylim = c(0,200))
+abline(reg = lm(ts_minor_y_PV ~ time(ts_minor_y_PV)), col="red")
+
+ts_medium_y_PV <- ts(medium_y_PV[,2], frequency = 1,start = c(1960,1))
+plot(ts_medium_y_PV,main = "Medium Hazard Yearly from 1960-2019", ylim = c(0,200))
+abline(reg = lm(ts_medium_y_PV ~ time(ts_medium_y_PV)), col="red")
+
+ts_major_y_PV <- ts(major_y_PV[,2], frequency = 1,start = c(1960,1))
+plot(ts_major_y_PV,main = "Major Hazard Yearly from 1960-2019", ylim = c(0,200))
+abline(reg = lm(ts_major_y_PV ~ time(ts_major_y_PV)), col="red")
+
+#Check the stationarity by using Augmented Dickey-Fuller Test
+
+adf.test(minor_y_PV$Count_yearly) # p-value = 0.1717 , non-stationary
+adf.test(medium_y_PV$Count_yearly) # p-value = 0.3362 , non-stationary
+adf.test(major_y_PV$Count_yearly) # p-value = 0.01 , stationary
+
+#apply autoarima
+
+auto.arima(minor_y_PV$Count_yearly)  #ARIMA(2,0,0) 
+auto.arima(medium_y_PV$Count_yearly)  #ARIMA(0,1,0)
+auto.arima(major_y_PV$Count_yearly)   #ARIMA(0,0,1)
+
+# PACF and ACF
+
+#par(mfrow=c(1,2))
+##Minor
+pacf(minor_y_PV$Count_yearly,lag=20,lwd = 5)  #cut-off at 2
+acf(minor_y_PV$Count_yearly,lag=20,lwd = 5)  #tailing off
+##Medium
+pacf(medium_y_PV$Count_yearly,lag=20,lwd = 5)  #cut-off at 1
+acf(medium_y_PV$Count_yearly,lag=20,lwd = 5)  #tailing off
+##Major
+pacf(major_y_PV$Count_yearly,lag=20,lwd = 5)  #tailing off
+acf(major_y_PV$Count_yearly,lag=20,lwd = 5)  #cut-off at 1
+
+## Minor
+ARIMA_minor_y_PV_200 <- arima(ts_minor_y_PV, order = c(2,0,0))
+print(ARIMA_minor_y_PV_200) #sigma^2 estimated as 212.4:  log likelihood = -246.01,  aic = 500.02
+ARIMA_minor_y_PV_210 <- arima(ts_minor_y_PV, order = c(2,1,0))
+print(ARIMA_minor_y_PV_210) #sigma^2 estimated as 245.8:  log likelihood = -246.29,  aic = 498.58  *** 
+
+#Medium
+ARIMA_medium_y_PV_010 <- arima(ts_medium_y_PV, order = c(0,1,0))
+print(ARIMA_medium_y_PV_010) #sigma^2 estimated as 720.1:  log likelihood = -277.81,  aic = 557.62 *** 
+ARIMA_medium_y_PV_110 <- arima(ts_medium_y_PV, order = c(1,1,0))
+print(ARIMA_medium_y_PV_110) #sigma^2 estimated as 708.8:  log likelihood = -277.35,  aic = 558.7 
+
+#Major 
+
+ARIMA_major_y_PV_001 <- arima(ts_major_y_PV, order = c(0,0,1))
+print(ARIMA_major_y_PV_001) #sigma^2 estimated as 12.97:  log likelihood = -162.05,  aic = 330.11 ***
+ARIMA_major_y_PV_002 <- arima(ts_major_y_PV, order = c(0,0,2))
+print(ARIMA_major_y_PV_002) #sigma^2 estimated as 12.95:  log likelihood = -162.01,  aic = 332.02
+
+# Plotting the original data and the fitted one
+
+##Minor
+ts.plot(ts_minor_y_PV, main = "Minor Harzard Yearly and Predicted")
+ARIMA_minor_y_PV_fit = ts_minor_y_PV - residuals(ARIMA_minor_y_PV_210)
+points(ARIMA_minor_y_PV_fit, type = "l",col = "blue", lty =5)
+##Medium
+ts.plot(ts_medium_y_PV, main = "Medium Harzard Yearly and Predicted")
+ARIMA_medium_y_PV_fit = ts_medium_y_PV - residuals(ARIMA_medium_y_PV_010)
+points(ARIMA_medium_y_PV_fit, type = "l",col = "blue", lty =5)
+##Major
+ts.plot(ts_major_y_PV, main = "Major Harzard Yearly and Predicted")
+ARIMA_major_y_PV_fit = ts_major_y_PV - residuals(ARIMA_major_y_PV_001)
+points(ARIMA_major_y_PV_fit, type = "l",col = "blue", lty =5)
+
+# 1-step forecast
+predict_minor_y_PV <- predict (ARIMA_minor_y_PV_210, n.ahead = 1)
+predict_minor_y_PV$pred  # 32.705
+
+predict_medium_y_PV <- predict (ARIMA_medium_y_PV_010, n.ahead = 1)
+predict_medium_y_PV$pred # 20
+
+predict_major_y_PV <- predict (ARIMA_major_y_PV_001, n.ahead = 1)
+predict_major_y_PV$pred   # 1.236992
+
+lambda_medium_SSP5=c(predict_medium_y_PV$pred*1.17750^(1:10/10),predict_medium_y_PV$pred*1.17750*((1.43414/1.17750)^(1:10/10)))
+lambda_major_SSP5=c(predict_major_y_PV$pred *1.17750^(1:10/10),predict_major_y_PV$pred *1.17750*((1.43414/1.17750)^(1:10/10)))
+
+lambda_medium_SSP3=c(predict_medium_y_PV$pred*1.15665^(1:10/10),predict_medium_y_PV$pred*1.15665*((1.32802/1.15665)^(1:10/10)))
+lambda_major_SSP3=c(predict_major_y_PV$pred *1.15665^(1:10/10),predict_major_y_PV$pred *1.15665*((1.32802/1.15665)^(1:10/10)))
+
+lambda_medium_SSP2=c(predict_medium_y_PV$pred*1.12346^(1:10/10),predict_medium_y_PV$pred*1.12346*((1.24834/1.12346)^(1:10/10)))
+lambda_major_SSP2=c(predict_major_y_PV$pred *1.12346^(1:10/10),predict_major_y_PV$pred *1.12346*((1.24834/1.12346)^(1:10/10)))
+
+lambda_medium_SSP1=c(predict_medium_y_PV$pred*1.10890^(1:10/10),predict_medium_y_PV$pred*1.10890*((1.19036/1.10890)^(1:10/10)))
+lambda_major_SSP1=c(predict_major_y_PV$pred *1.10890^(1:10/10),predict_major_y_PV$pred *1.10890*((1.19036/1.10890)^(1:10/10)))
+
+stopping_time=20
+```
+
+```{r Claim Cost distribution fitting medium}
+lnorm_med_fit=mllnorm(medium_cost$Presentvalue)
+pareto_med_fit=mlpareto(medium_cost$Presentvalue)
+gamma_med_fit=univariateML::mlgamma(medium_cost$Presentvalue)
+invgauss_med_fit=mlinvgauss(medium_cost$Presentvalue)
+
+{plot(ecdf(medium_cost$Presentvalue))
+lines(ecdf(rlnorm(10000,lnorm_med_fit[1],lnorm_med_fit[2])),col="green")
+lines(ecdf(rpareto(10000,pareto_med_fit[1],pareto_med_fit[2])),col="red")
+lines(ecdf(rgamma(10000,gamma_med_fit[1],gamma_med_fit[2])),col="blue")
+lines(ecdf(rinvgauss(10000,invgauss_med_fit[1],invgauss_med_fit[2])),col="purple")
+}
+
+ad.test(medium_cost$Presentvalue,"plnorm",meanlog=lnorm_med_fit[1],sdlog=lnorm_med_fit[2])
+ad.test(medium_cost$Presentvalue,"ppareto",shape=pareto_med_fit[1],scale=pareto_med_fit[2])
+ad.test(medium_cost$Presentvalue,"pgamma",shape=gamma_med_fit[1],rate=gamma_med_fit[2])
+ad.test(medium_cost$Presentvalue,"pinvgauss",mean=invgauss_med_fit[1],shape=invgauss_med_fit[2])
+
+cvm.test(medium_cost$Presentvalue,"plnorm",meanlog=lnorm_med_fit[1],sdlog=lnorm_med_fit[2])
+cvm.test(medium_cost$Presentvalue,"ppareto",shape=pareto_med_fit[1],scale=pareto_med_fit[2])
+cvm.test(medium_cost$Presentvalue,"pgamma",shape=gamma_med_fit[1],rate=gamma_med_fit[2])
+cvm.test(medium_cost$Presentvalue,"pinvgauss",mean=invgauss_med_fit[1],shape=invgauss_med_fit[2])
+```
+
+```{r Claim Cost distribution fitting major}
+weibull_maj_fit=mlweibull(major_cost$Presentvalue)
+pareto_maj_fit=mlpareto(major_cost$Presentvalue)
+lgamma_maj_fit=mllgamma(major_cost$Presentvalue)
+
+{plot(ecdf(major_cost$Presentvalue))
+lines(ecdf(rweibull(10000,weibull_maj_fit[1],weibull_maj_fit[2])),col="red") #mean=108,960,581
+lines(ecdf(rlgamma(100000,lgamma_maj_fit[1],lgamma_maj_fit[2])),col="green") #mean=65,903,627
+lines(ecdf(rpareto(10000,pareto_maj_fit[1],pareto_maj_fit[2])),col="blue") #mean=513,638,478
+lines(ecdf(rinvgauss(10000,invgauss_maj_fit[1],invgauss_maj_fit[2])),col="orange") #225247481
+lines(ecdf(rlnorm(10000,lnorm_maj_fit[1],lnorm_maj_fit[2])),col="purple")
+}
+
+ad.test(major_cost$Presentvalue,"pweibull",shape=weibull_maj_fit[1],scale=weibull_maj_fit[2])
+ad.test(major_cost$Presentvalue,"ppareto",shape=pareto_maj_fit[1],scale=pareto_maj_fit[2])
+ad.test(major_cost$Presentvalue,"plgamma",shapelog=lgamma_maj_fit[1],ratelog=lgamma_maj_fit[2])
+
+cvm.test(major_cost$Presentvalue,"pweibull",shape=weibull_maj_fit[1],scale=weibull_maj_fit[2])
+cvm.test(major_cost$Presentvalue,"ppareto",shape=pareto_maj_fit[1],scale=pareto_maj_fit[2])
+cvm.test(major_cost$Presentvalue,"plgamma",shapelog=lgamma_maj_fit[1],ratelog=lgamma_maj_fit[2])
+
+
+```
+
+```{r Loss Simulation SSP5}
+n=100000
+count=0
+yearlyloss=matrix(rep(0,(stopping_time+1)*n),nrow=stopping_time+1,ncol=n)
+for(i in 1:stopping_time){
+  yearlyloss[i+1,]=yearlyloss[i+1,]+yearlyloss[i,]
+  for(j in 1:n){
+    N_med=rpois(1,lambda_medium_SSP5[i])
+    N_maj=rpois(1,lambda_major_SSP5[i])
+    if(N_med>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(1.25*rinvgauss(N_med,invgauss_med_fit[1],invgauss_med_fit[2]))
+    } 
+    if(N_maj>0){
+      temp_maj_cost=sum(2.25*rlgamma(N_maj,lgamma_maj_fit[1],lgamma_maj_fit[2]))
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+temp_maj_cost+temp_maj_cost/median_house_price*2.5*1857.908671*12
+    }
+  }
+}
+quantile99_SSP5=rep(0,stopping_time+1)
+quantile95_SSP5=rep(0,stopping_time+1)
+quantile50_SSP5=rep(0,stopping_time+1)
+quantile5_SSP5=rep(0,stopping_time+1)
+quantile1_SSP5=rep(0,stopping_time+1)
+sim_mean_SSP5=rep(0,stopping_time+1)
+for(k in 1:(stopping_time+1)){
+  quantile99_SSP5[k]=quantile(yearlyloss[k,],0.99)
+  quantile95_SSP5[k]=quantile(yearlyloss[k,],0.95)
+  quantile50_SSP5[k]=quantile(yearlyloss[k,],0.5)
+  quantile5_SSP5[k]=quantile(yearlyloss[k,],0.05)
+  quantile1_SSP5[k]=quantile(yearlyloss[k,],0.01)
+  sim_mean_SSP5[k]=mean(yearlyloss[k,])
+}
+
+{plot(2020:2040,quantile99_SSP5,type="l",xlab="Years",ylab="Damage Cost (Ꝕ)")
+polygon(c(2020:2040,2040:2020),c(quantile99_SSP5,rev(quantile95_SSP5)),col="lightcoral",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile95_SSP5,rev(quantile50_SSP5)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile50_SSP5,rev(quantile5_SSP5)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile5_SSP5,rev(quantile1_SSP5)),col="lightcoral",border = "white")
+#lines(2020:2040,mean_damage,type="l",lwd=4,col="blue")
+lines(2020:2040,quantile99_SSP5,type="l",lwd=2)
+lines(2020:2040,quantile95_SSP5,type="l",lwd=2)
+lines(2020:2040,quantile50_SSP5,type="l",lwd=2)
+lines(2020:2040,quantile5_SSP5,type="l",lwd=2)
+lines(2020:2040,quantile1_SSP5,type="l",lwd=2)
+lines(2020:2040,sim_mean_SSP5,type="l",lwd=4,col="blue")
+}
+quantile99_SSP5
+sim_mean_SSP5
+```
+
+```{r Loss Simulation SSP3}
+n=100000
+count=0
+yearlyloss=matrix(rep(0,(stopping_time+1)*n),nrow=stopping_time+1,ncol=n)
+for(i in 1:stopping_time){
+  yearlyloss[i+1,]=yearlyloss[i+1,]+yearlyloss[i,]
+  for(j in 1:n){
+    N_med=rpois(1,lambda_medium_SSP3[i])
+    N_maj=rpois(1,lambda_major_SSP3[i])
+    if(N_med>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(1.25*rinvgauss(N_med,invgauss_med_fit[1],invgauss_med_fit[2]))
+    } 
+    if(N_maj>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(2.25*rlgamma(N_maj,lgamma_maj_fit[1],lgamma_maj_fit[2]))
+    }
+  }
+}
+quantile99_SSP3=rep(0,stopping_time+1)
+quantile95_SSP3=rep(0,stopping_time+1)
+quantile50_SSP3=rep(0,stopping_time+1)
+quantile5_SSP3=rep(0,stopping_time+1)
+quantile1_SSP3=rep(0,stopping_time+1)
+sim_mean_SSP3=rep(0,stopping_time+1)
+for(k in 1:(stopping_time+1)){
+  quantile99_SSP3[k]=quantile(yearlyloss[k,],0.99)
+  quantile95_SSP3[k]=quantile(yearlyloss[k,],0.95)
+  quantile50_SSP3[k]=quantile(yearlyloss[k,],0.5)
+  quantile5_SSP3[k]=quantile(yearlyloss[k,],0.05)
+  quantile1_SSP3[k]=quantile(yearlyloss[k,],0.01)
+  sim_mean_SSP3[k]=mean(yearlyloss[k,])
+}
+
+{plot(2020:2040,quantile99_SSP3,type="l",xlab="Years",ylab="Damage Cost (Ꝕ)")
+polygon(c(2020:2040,2040:2020),c(quantile99_SSP3,rev(quantile95_SSP3)),col="lightcoral",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile95_SSP3,rev(quantile50_SSP3)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile50_SSP3,rev(quantile5_SSP3)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile5_SSP3,rev(quantile1_SSP3)),col="lightcoral",border = "white")
+#lines(2020:2040,mean_damage,type="l",lwd=4,col="blue")
+lines(2020:2040,quantile99_SSP3,type="l",lwd=2)
+lines(2020:2040,quantile95_SSP3,type="l",lwd=2)
+lines(2020:2040,quantile50_SSP3,type="l",lwd=2)
+lines(2020:2040,quantile5_SSP3,type="l",lwd=2)
+lines(2020:2040,quantile1_SSP3,type="l",lwd=2)
+lines(2020:2040,sim_mean_SSP3,type="l",lwd=4,col="blue")
+}
+quantile99_SSP3
+sim_mean_SSP3
+```
+
+```{r Loss Simulation SSP2}
+n=100000
+count=0
+yearlyloss=matrix(rep(0,(stopping_time+1)*n),nrow=stopping_time+1,ncol=n)
+for(i in 1:stopping_time){
+  yearlyloss[i+1,]=yearlyloss[i+1,]+yearlyloss[i,]
+  for(j in 1:n){
+    N_med=rpois(1,lambda_medium_SSP2[i])
+    N_maj=rpois(1,lambda_major_SSP2[i])
+    if(N_med>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(1.25*rinvgauss(N_med,invgauss_med_fit[1],invgauss_med_fit[2]))
+    } 
+    if(N_maj>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(2.25*rlgamma(N_maj,lgamma_maj_fit[1],lgamma_maj_fit[2]))
+    }
+  }
+}
+quantile99_SSP2=rep(0,stopping_time+1)
+quantile95_SSP2=rep(0,stopping_time+1)
+quantile50_SSP2=rep(0,stopping_time+1)
+quantile5_SSP2=rep(0,stopping_time+1)
+quantile1_SSP2=rep(0,stopping_time+1)
+sim_mean_SSP2=rep(0,stopping_time+1)
+for(k in 1:(stopping_time+1)){
+  quantile99_SSP2[k]=quantile(yearlyloss[k,],0.99)
+  quantile95_SSP2[k]=quantile(yearlyloss[k,],0.95)
+  quantile50_SSP2[k]=quantile(yearlyloss[k,],0.5)
+  quantile5_SSP2[k]=quantile(yearlyloss[k,],0.05)
+  quantile1_SSP2[k]=quantile(yearlyloss[k,],0.01)
+  sim_mean_SSP2[k]=mean(yearlyloss[k,])
+}
+
+{plot(2020:2040,quantile99_SSP2,type="l",xlab="Years",ylab="Damage Cost (Ꝕ)")
+polygon(c(2020:2040,2040:2020),c(quantile99_SSP2,rev(quantile95_SSP2)),col="lightcoral",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile95_SSP2,rev(quantile50_SSP2)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile50_SSP2,rev(quantile5_SSP2)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile5_SSP2,rev(quantile1_SSP2)),col="lightcoral",border = "white")
+#lines(2020:2040,mean_damage,type="l",lwd=4,col="blue")
+lines(2020:2040,quantile99_SSP2,type="l",lwd=2)
+lines(2020:2040,quantile95_SSP2,type="l",lwd=2)
+lines(2020:2040,quantile50_SSP2,type="l",lwd=2)
+lines(2020:2040,quantile5_SSP2,type="l",lwd=2)
+lines(2020:2040,quantile1_SSP2,type="l",lwd=2)
+lines(2020:2040,sim_mean_SSP2,type="l",lwd=4,col="blue")
+}
+quantile99_SSP2
+sim_mean_SSP2
+```
+
+```{r Loss Simulation SSP1}
+n=100000
+count=0
+yearlyloss=matrix(rep(0,(stopping_time+1)*n),nrow=stopping_time+1,ncol=n)
+for(i in 1:stopping_time){
+  yearlyloss[i+1,]=yearlyloss[i+1,]+yearlyloss[i,]
+  for(j in 1:n){
+    N_med=rpois(1,lambda_medium_SSP1[i])
+    N_maj=rpois(1,lambda_major_SSP1[i])
+    if(N_med>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(1.25*rinvgauss(N_med,invgauss_med_fit[1],invgauss_med_fit[2]))
+    } 
+    if(N_maj>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(2.25*rlgamma(N_maj,lgamma_maj_fit[1],lgamma_maj_fit[2]))
+    }
+  }
+}
+quantile99_SSP1=rep(0,stopping_time+1)
+quantile95_SSP1=rep(0,stopping_time+1)
+quantile50_SSP1=rep(0,stopping_time+1)
+quantile5_SSP1=rep(0,stopping_time+1)
+quantile1_SSP1=rep(0,stopping_time+1)
+sim_mean_SSP1=rep(0,stopping_time+1)
+for(k in 1:(stopping_time+1)){
+  quantile99_SSP1[k]=quantile(yearlyloss[k,],0.99)
+  quantile95_SSP1[k]=quantile(yearlyloss[k,],0.95)
+  quantile50_SSP1[k]=quantile(yearlyloss[k,],0.5)
+  quantile5_SSP1[k]=quantile(yearlyloss[k,],0.05)
+  quantile1_SSP1[k]=quantile(yearlyloss[k,],0.01)
+  sim_mean_SSP1[k]=mean(yearlyloss[k,])
+}
+
+{plot(2020:2040,quantile99_SSP1,type="l",xlab="Years",ylab="Damage Cost (Ꝕ)")
+polygon(c(2020:2040,2040:2020),c(quantile99_SSP1,rev(quantile95_SSP1)),col="lightcoral",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile95_SSP1,rev(quantile50_SSP1)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile50_SSP1,rev(quantile5_SSP1)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile5_SSP1,rev(quantile1_SSP1)),col="lightcoral",border = "white")
+#lines(2020:2040,mean_damage,type="l",lwd=4,col="blue")
+lines(2020:2040,quantile99_SSP1,type="l",lwd=2)
+lines(2020:2040,quantile95_SSP1,type="l",lwd=2)
+lines(2020:2040,quantile50_SSP1,type="l",lwd=2)
+lines(2020:2040,quantile5_SSP1,type="l",lwd=2)
+lines(2020:2040,quantile1_SSP1,type="l",lwd=2)
+lines(2020:2040,sim_mean_SSP1,type="l",lwd=4,col="blue")
+}
+quantile99_SSP1
+sim_mean_SSP1
+```
+
+```{r Cost plotting}
+
+{
+plot(2021:2040,diff(sim_mean_SSP5_relocation),type="l",ylab="Cost Per Year (Ꝕ)",xlab="Years",ylim = c(2e8,4e8), main="Most Pessimistic Assumption")
+lines(2021:2040,diff(sim_mean_SSP5),col="red")
+}
+{
+plot(2020:2040,sim_mean_SSP5_relocation-sim_mean_SSP5,type="l")
+}
+{
+plot(2021:2040,diff(sim_mean_SSP2_relocation),type="l",ylab="Cost Per Year (Ꝕ)",xlab="Years")
+lines(2021:2040,diff(sim_mean_SSP2))
+}
+{
+plot(2020:2040,sim_mean_SSP2_relocation-sim_mean_SSP2,type="l")
+}
+{
+plot(2021:2040,diff(sim_mean_SSP1_relocation),type="l",ylab="Cost Per Year (Ꝕ)",xlab="Years",ylim = c(1e8,4e8), main="Most Pessimistic Assumption")
+lines(2021:2040,diff(sim_mean_SSP1),col="red")
+}
+```
+
+
+```{r %Relocation}
+percent_household_assumption=c(0.0005,0.001,0.0015) #B
+participation_assumption=c(0.9,0.7,0.5) #A
+percent_mitigation_assumption=c(0.7,0.5,0.3) #C
+
+household_at_risk=percent_household_assumption[1]*5891507#Change value in square bracket to test other scenarios
+median_house_price=205120.0939
+Percent_relocated=c(participation_assumption[1]*(9:0/10)+1-participation_assumption[1],rep(1-participation_assumption[1],10)) #Change value in square bracket to test other scenarios
+Percent_relocated=c(1,Percent_relocated)#AMOUNT WE CAN MITIGATE USING VOLUNTARY RELOCATION
+flooding_maj_percent=0.3006*percent_mitigation_assumption[1]#Change value in square bracket to test other scenarios
+flooding_med_percent=0.1713*percent_mitigation_assumption[1]#Change value in square bracket to test other scenarios
+lambda_major_SSP5_relocation=lambda_major_SSP5*(Percent_relocated[-1]*flooding_maj_percent+(1-flooding_maj_percent))
+lambda_medium_SSP5_relocation=lambda_medium_SSP5*(Percent_relocated[-1]*flooding_med_percent+(1-flooding_med_percent))
+lambda_major_SSP2_relocation=lambda_major_SSP2*(Percent_relocated[-1]*flooding_maj_percent+(1-flooding_maj_percent))
+lambda_medium_SSP2_relocation=lambda_medium_SSP2*(Percent_relocated[-1]*flooding_med_percent+(1-flooding_med_percent))
+lambda_major_SSP1_relocation=lambda_major_SSP1*(Percent_relocated[-1]*flooding_maj_percent+(1-flooding_maj_percent))
+lambda_medium_SSP1_relocation=lambda_medium_SSP1*(Percent_relocated[-1]*flooding_med_percent+(1-flooding_med_percent))
+```
+
+```{r Loss Simulation SSP5 with Relocation}
+n=100000
+count=0
+yearlyloss=matrix(rep(0,(stopping_time+1)*n),nrow=stopping_time+1,ncol=n)
+for(i in 1:stopping_time){
+  yearlyloss[i+1,]=yearlyloss[i+1,]+yearlyloss[i,]
+  for(j in 1:n){
+    N_med=rpois(1,lambda_medium_SSP5_relocation[i])
+    N_maj=rpois(1,lambda_major_SSP5_relocation[i])
+    if(N_med>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(1.25*rinvgauss(N_med,invgauss_med_fit[1],invgauss_med_fit[2]))
+    } 
+    if(N_maj>0){
+      temp_maj_cost=sum(2.25*rlgamma(N_maj,lgamma_maj_fit[1],lgamma_maj_fit[2]))
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+temp_maj_cost+temp_maj_cost/median_house_price*2.5*1857.908671*12
+    }
+  }
+  yearlyloss[i+1,]=yearlyloss[i+1,]+(-Percent_relocated[i+1]+Percent_relocated[i])*household_at_risk*median_house_price
+}
+quantile99_SSP5_relocation=rep(0,stopping_time+1)
+quantile95_SSP5_relocation=rep(0,stopping_time+1)
+quantile50_SSP5_relocation=rep(0,stopping_time+1)
+quantile5_SSP5_relocation=rep(0,stopping_time+1)
+quantile1_SSP5_relocation=rep(0,stopping_time+1)
+sim_mean_SSP5_relocation=rep(0,stopping_time+1)
+for(k in 1:(stopping_time+1)){
+  quantile99_SSP5_relocation[k]=quantile(yearlyloss[k,],0.99)
+  quantile95_SSP5_relocation[k]=quantile(yearlyloss[k,],0.95)
+  quantile50_SSP5_relocation[k]=quantile(yearlyloss[k,],0.5)
+  quantile5_SSP5_relocation[k]=quantile(yearlyloss[k,],0.05)
+  quantile1_SSP5_relocation[k]=quantile(yearlyloss[k,],0.01)
+  sim_mean_SSP5_relocation[k]=mean(yearlyloss[k,])
+}
+
+{plot(2020:2040,quantile99_SSP5_relocation,type="l",xlab="Years",ylab="Damage Cost (Ꝕ)")
+polygon(c(2020:2040,2040:2020),c(quantile99_SSP5_relocation,rev(quantile95_SSP5_relocation)),col="lightcoral",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile95_SSP5_relocation,rev(quantile50_SSP5_relocation)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile50_SSP5_relocation,rev(quantile5_SSP5_relocation)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile5_SSP5_relocation,rev(quantile1_SSP5_relocation)),col="lightcoral",border = "white")
+#lines(2020:2040,mean_damage,type="l",lwd=4,col="blue")
+lines(2020:2040,quantile99_SSP5_relocation,type="l",lwd=2)
+lines(2020:2040,quantile95_SSP5_relocation,type="l",lwd=2)
+lines(2020:2040,quantile50_SSP5_relocation,type="l",lwd=2)
+lines(2020:2040,quantile5_SSP5_relocation,type="l",lwd=2)
+lines(2020:2040,quantile1_SSP5_relocation,type="l",lwd=2)
+lines(2020:2040,sim_mean_SSP5_relocation,type="l",lwd=4,col="blue")
+}
+quantile99_SSP5_relocation
+sim_mean_SSP5_relocation
+```
+
+```{r Loss Simulation SSP2 with Relocation}
+n=100000
+count=0
+yearlyloss=matrix(rep(0,(stopping_time+1)*n),nrow=stopping_time+1,ncol=n)
+for(i in 1:stopping_time){
+  yearlyloss[i+1,]=yearlyloss[i+1,]+yearlyloss[i,]
+  for(j in 1:n){
+    N_med=rpois(1,lambda_medium_SSP2_relocation[i])
+    N_maj=rpois(1,lambda_major_SSP2_relocation[i])
+    if(N_med>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(1.25*rinvgauss(N_med,invgauss_med_fit[1],invgauss_med_fit[2]))
+    } 
+    if(N_maj>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(2.25*rlgamma(N_maj,lgamma_maj_fit[1],lgamma_maj_fit[2]))
+    }
+  }
+  yearlyloss[i+1,]=yearlyloss[i+1,]+(-Percent_relocated[i+1]+Percent_relocated[i])*household_at_risk*median_house_price
+}
+quantile99_SSP2_relocation=rep(0,stopping_time+1)
+quantile95_SSP2_relocation=rep(0,stopping_time+1)
+quantile50_SSP2_relocation=rep(0,stopping_time+1)
+quantile5_SSP2_relocation=rep(0,stopping_time+1)
+quantile1_SSP2_relocation=rep(0,stopping_time+1)
+sim_mean_SSP2_relocation=rep(0,stopping_time+1)
+for(k in 1:(stopping_time+1)){
+  quantile99_SSP2_relocation[k]=quantile(yearlyloss[k,],0.99)
+  quantile95_SSP2_relocation[k]=quantile(yearlyloss[k,],0.95)
+  quantile50_SSP2_relocation[k]=quantile(yearlyloss[k,],0.5)
+  quantile5_SSP2_relocation[k]=quantile(yearlyloss[k,],0.05)
+  quantile1_SSP2_relocation[k]=quantile(yearlyloss[k,],0.01)
+  sim_mean_SSP2_relocation[k]=mean(yearlyloss[k,])
+}
+
+{plot(2020:2040,quantile99_SSP2_relocation,type="l",xlab="Years",ylab="Damage Cost (Ꝕ)")
+polygon(c(2020:2040,2040:2020),c(quantile99_SSP2_relocation,rev(quantile95_SSP2_relocation)),col="lightcoral",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile95_SSP2_relocation,rev(quantile50_SSP2_relocation)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile50_SSP2_relocation,rev(quantile5_SSP2_relocation)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile5_SSP2_relocation,rev(quantile1_SSP2_relocation)),col="lightcoral",border = "white")
+#lines(2020:2040,mean_damage,type="l",lwd=4,col="blue")
+lines(2020:2040,quantile99_SSP2_relocation,type="l",lwd=2)
+lines(2020:2040,quantile95_SSP2_relocation,type="l",lwd=2)
+lines(2020:2040,quantile50_SSP2_relocation,type="l",lwd=2)
+lines(2020:2040,quantile5_SSP2_relocation,type="l",lwd=2)
+lines(2020:2040,quantile1_SSP2_relocation,type="l",lwd=2)
+lines(2020:2040,sim_mean_SSP2_relocation,type="l",lwd=4,col="blue")
+}
+quantile99_SSP2_relocation
+sim_mean_SSP2_relocation
+```
+```{r Loss Simulation SSP1 with Relocation}
+n=100000
+count=0
+yearlyloss=matrix(rep(0,(stopping_time+1)*n),nrow=stopping_time+1,ncol=n)
+for(i in 1:stopping_time){
+  yearlyloss[i+1,]=yearlyloss[i+1,]+yearlyloss[i,]
+  for(j in 1:n){
+    N_med=rpois(1,lambda_medium_SSP1_relocation[i])
+    N_maj=rpois(1,lambda_major_SSP1_relocation[i])
+    if(N_med>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(1.25*rinvgauss(N_med,invgauss_med_fit[1],invgauss_med_fit[2]))
+    } 
+    if(N_maj>0){
+      yearlyloss[i+1,j]=yearlyloss[i+1,j]+sum(2.25*rlgamma(N_maj,lgamma_maj_fit[1],lgamma_maj_fit[2]))
+    }
+  }
+  yearlyloss[i+1,]=yearlyloss[i+1,]+(-Percent_relocated[i+1]+Percent_relocated[i])*household_at_risk*median_house_price
+}
+quantile99_SSP1_relocation=rep(0,stopping_time+1)
+quantile95_SSP1_relocation=rep(0,stopping_time+1)
+quantile50_SSP1_relocation=rep(0,stopping_time+1)
+quantile5_SSP1_relocation=rep(0,stopping_time+1)
+quantile1_SSP1_relocation=rep(0,stopping_time+1)
+sim_mean_SSP1_relocation=rep(0,stopping_time+1)
+for(k in 1:(stopping_time+1)){
+  quantile99_SSP1_relocation[k]=quantile(yearlyloss[k,],0.99)
+  quantile95_SSP1_relocation[k]=quantile(yearlyloss[k,],0.95)
+  quantile50_SSP1_relocation[k]=quantile(yearlyloss[k,],0.5)
+  quantile5_SSP1_relocation[k]=quantile(yearlyloss[k,],0.05)
+  quantile1_SSP1_relocation[k]=quantile(yearlyloss[k,],0.01)
+  sim_mean_SSP1_relocation[k]=mean(yearlyloss[k,])
+}
+
+{plot(2020:2040,quantile99_SSP1_relocation,type="l",xlab="Years",ylab="Damage Cost (Ꝕ)")
+polygon(c(2020:2040,2040:2020),c(quantile99_SSP1_relocation,rev(quantile95_SSP1_relocation)),col="lightcoral",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile95_SSP1_relocation,rev(quantile50_SSP1_relocation)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile50_SSP1_relocation,rev(quantile5_SSP1_relocation)),col="palegreen",border = "white")
+polygon(c(2020:2040,2040:2020),c(quantile5_SSP1_relocation,rev(quantile1_SSP1_relocation)),col="lightcoral",border = "white")
+#lines(2020:2040,mean_damage,type="l",lwd=4,col="blue")
+lines(2020:2040,quantile99_SSP1_relocation,type="l",lwd=2)
+lines(2020:2040,quantile95_SSP1_relocation,type="l",lwd=2)
+lines(2020:2040,quantile50_SSP1_relocation,type="l",lwd=2)
+lines(2020:2040,quantile5_SSP1_relocation,type="l",lwd=2)
+lines(2020:2040,quantile1_SSP1_relocation,type="l",lwd=2)
+lines(2020:2040,sim_mean_SSP1_relocation,type="l",lwd=4,col="blue")
+}
+quantile99_SSP1_relocation
+sim_mean_SSP1_relocation
+```
+
+```{r Ruin Simulation SSP5}
+n=10000 #number of simulations
+PI=1*diff(sim_mean_SSP5) #rate of continuous payment
+c_0=4000000000 #starting reserve
+
+count=0
+for(j in 1:n){
+  C_t_minus=c_0
+  
+{  
+  claim_t_medium=NULL
+  claim_t_major=NULL
+  for(k in 1:stopping_time){
+    claim_t_medium=c(claim_t_medium,k-1+runif(rpois(1,lambda_medium_SSP5[k]))) #generate claim arrival time for medium
+    claim_t_major=c(claim_t_major,k-1+runif(rpois(1,lambda_major_SSP5[k]))) #generate claim arrival time for major
+  }
+  mmm_tags=c(rep("me",length(claim_t_medium)),rep("ma",length(claim_t_major)))
+  claim_t=c(claim_t_medium,claim_t_major)
+  mmm_tags=c("NA",mmm_tags[order(claim_t)])
+  claim_t=c(0,sort(claim_t))
+}#Generate claim arrivals for medium and major
+  
+  for(i in 1:(length(claim_t)-1)){
+      C_t_minus=c(C_t_minus,C_t_minus[i]
+                  +(floor(claim_t[i+1])-claim_t[i])*PI[floor(claim_t[i]+1)] #Note that this breaks if floor(claim_t[i+1])-floor(claim_t[i])>1 but this is way too unlikely for me to want to code the edge case
+                  +(claim_t[i+1]-floor(claim_t[i+1]))*PI[floor(claim_t[i+1]+1)]#PI*(claim_t[i+1]-claim_t[i]) for constant PI
+                  -rinvgauss(1,invgauss_med_fit[1],invgauss_med_fit[2])
+                  *(mmm_tags[i+1]=="me")*1.25 #distribution for medium
+                  -rlgamma(1,lgamma_maj_fit[1],lgamma_maj_fit[2])
+                  *(mmm_tags[i+1]=="ma")*(2.25+1857.908671*2.5*12/200000)#distribution for major
+                  ) #GENERATING CLAIM AMOUNTS FOR EACH OF THE ARRIVAL TIMES
+  }
+  count=count+(min(C_t_minus)<0)  #CHECKING WHETHER RUIN OCCURED
+}
+count/n
+```
+
+```{r Ruin Simulation SSP5 with Relocation}
+n=10000 #number of simulations
+PI=1*(diff(sim_mean_SSP5_relocation)-c(0.1*rep(household_at_risk*median_house_price,10),rep(0,10))) #rate of continuous payment
+c_0=4000000000 #starting reserve
+
+count=0
+for(j in 1:n){
+  C_t_minus=c_0
+  
+{  
+  claim_t_medium=NULL
+  claim_t_major=NULL
+  for(k in 1:stopping_time){
+    claim_t_medium=c(claim_t_medium,k-1+runif(rpois(1,lambda_medium_SSP5_relocation[k]))) #generate claim arrival time for medium
+    claim_t_major=c(claim_t_major,k-1+runif(rpois(1,lambda_major_SSP5_relocation[k]))) #generate claim arrival time for major
+  }
+  mmm_tags=c(rep("me",length(claim_t_medium)),rep("ma",length(claim_t_major)))
+  claim_t=c(claim_t_medium,claim_t_major)
+  mmm_tags=c("NA",mmm_tags[order(claim_t)])
+  claim_t=c(0,sort(claim_t))
+}#Generate claim arrivals for medium and major
+  
+  for(i in 1:(length(claim_t)-1)){
+      C_t_minus=c(C_t_minus,C_t_minus[i]
+                  +(floor(claim_t[i+1])-claim_t[i])*PI[floor(claim_t[i]+1)] #Note that this breaks if floor(claim_t[i+1])-floor(claim_t[i])>1 but this is way too unlikely for me to want to code the edge case
+                  +(claim_t[i+1]-floor(claim_t[i+1]))*PI[floor(claim_t[i+1]+1)]#PI*(claim_t[i+1]-claim_t[i]) for constant PI
+                  -rinvgauss(1,invgauss_med_fit[1],invgauss_med_fit[2])
+                  *(mmm_tags[i+1]=="me")*1.25 #distribution for medium
+                  -rlgamma(1,lgamma_maj_fit[1],lgamma_maj_fit[2])
+                  *(mmm_tags[i+1]=="ma")*(2.25+1857.908671*2.5*12/200000)#distribution for major
+                  ) #GENERATING CLAIM AMOUNTS FOR EACH OF THE ARRIVAL TIMES
+  }
+  count=count+(min(C_t_minus)<0)  #CHECKING WHETHER RUIN OCCURED
+}
+count/n
+```
