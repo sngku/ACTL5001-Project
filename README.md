@@ -52,7 +52,7 @@ We plan to have the program slowly adopted over the next 10 years, aiming to mov
 ### 3.1 Methodologies
 
 <p align="center"> 
-<img src="![Table 1](https://user-images.githubusercontent.com/113341306/229004030-469fe6e3-7f97-4fb9-a684-3d267dfb289b.png)">
+<img src="https://user-images.githubusercontent.com/113341306/229004030-469fe6e3-7f97-4fb9-a684-3d267dfb289b.png">
 </p>
 
 ### 3.2 Assumptions
@@ -70,7 +70,7 @@ For the purpose of modelling, a number of assumptions are required due to the la
 •	Disasters caused by co-occurring disasters are count as one occurrence of each.
 
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Table%202.png">
+<img src="https://user-images.githubusercontent.com/113341306/229004152-a8d7b46e-acef-4cfb-86ff-1b369a48b0ee.png">
 </p>
 
 For relocation, we will make the following assumptions:
@@ -88,22 +88,22 @@ First, we used Monte Carlos simulation on the created Compound Poisson Model to 
 Total Expected Cost Arising from Natural Disasters Under SSP5 Assumption
 
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Figure%202.png">
+<img src="https://user-images.githubusercontent.com/113341306/229004253-b28ed868-e433-4459-8411-67f3731ab11a.png">
 </p>
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Table%203.png">
+<img src="https://user-images.githubusercontent.com/113341306/229004297-ad696820-e15a-4a01-88df-a2b8a595987c.png">
 </p>
 
 Total Expected Cost Arising by 2030 from Natural Disasters Under different SSP Assumptions
 
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Table%204.png">
+<img src="https://user-images.githubusercontent.com/113341306/229004319-6566e497-b780-4e47-9cdc-1f3ac7727e51.png">
 </p>
 
 Running ruin simulation on the base case with premiums the expected cost each year shows the following results:
 
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Table%205.png">
+<img src="https://user-images.githubusercontent.com/113341306/229004348-3ebd0fa1-269e-4655-baa7-8b2154d77a61.png">
 </p>
 
 Next, we simulate the effect under the inclusion of the relocation program under SSP5. Note that all SSP assumptions will arrive at similar results. (See Appendix E)
@@ -111,10 +111,10 @@ Next, we simulate the effect under the inclusion of the relocation program under
 Comparison of Expected Cost Per Year on Disaster Claims Under SSP5
 
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Figure%203.1.png">
+<img src="https://user-images.githubusercontent.com/113341306/229004384-87a77a36-b6c5-47d7-a08b-e84279422050.png">
 </p>
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Figure%203.2.png">
+<img src="https://user-images.githubusercontent.com/113341306/229004415-14c82c9e-ea42-42e2-931b-f4bd485fd677.png">
 </p>
 <h6 align="center"> 
 [red: without relocation; black: with relocation]
@@ -123,16 +123,14 @@ Comparison of Expected Cost Per Year on Disaster Claims Under SSP5
 The relocation program will result in heavier costs in the first decade, as the full subsidy program relocates citizens away from 1-in-10-year flood risk zones. For the years after the first ten years, the expected cost every year from disaster claims is expected to be lower than without the program. The cost saved over after the 10 years is expected to eventually outweigh the cost of the relocation program. The time required to break even depends on how optimistic the assumptions are from Table 2. Assumption A, the participation rate, will not affect the years needed to breakeven but will affect ruin probabilities. Assumptions B and C have impacts on the cost of the program and how much cost will be saved by the program. Some selected examples of payback years are noted below.
 
 <p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Table%206.png">
+<img src="https://user-images.githubusercontent.com/113341306/229004445-2a0535bd-bcf9-4a80-b5a1-c370f465c23a.png">
 </p>
 
 The assumption B, percentage of property in 1-in-10-year flood risk zones, directly impact the cost to relocate the residents away from the hazard zone. If the pessimistic assumption of B is true, then this leads to much heavier costs in the first 10 years of the program.
 Assumption C, the percentage of flood damage caused by 1-in-10-year flood risk zone properties, affects how much claim costs are saved in the future years from reduced flooding-related disasters.
 Under the optimistic assumptions, the program will be able to break even just 5 years after the relocation program is complete. Post relocation program, Storslysia is expected to save one-sixth of the annual cost spent due to natural disasters. Assumption B increases the payback time the most, as full buyback of properties can turn out to be a very costly endeavour as the number of properties increases. However, we do believe that even under moderate assumptions, the relocation program is worth considering. Albeit unlikely, if both pessimistic assumptions on B and C are true, then the program can take a very long time to be able to see any benefits.
 
-<p align="center"> 
-<img src="https://github.com/sngku/ACTL5001-Project/blob/main/Table%207.png">
-</p>
+![Table 7](https://user-images.githubusercontent.com/113341306/229004488-6a062c45-535d-4693-b96a-ad0d256f64ed.png)
 
 In our model, assumption A directly influence the amount of reduction to the number of occurrences of natural disasters. In reducing the number of occurrences, we are directly targeting the value at risk for each year. This allows the social insurance program to have a lower probability of ruin under the same starting reserve.
 Assumptions B and C will not affect the ruin probability as we will be financing the 2 programs separately.
