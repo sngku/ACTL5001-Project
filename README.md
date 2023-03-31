@@ -1,4 +1,4 @@
-# Storslysia Social insurance program and relocation scheme!
+# Storslysia Social insurance program and relocation scheme
 
 ---
 
